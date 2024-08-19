@@ -3,22 +3,15 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const {PORT} = require('./config/server-config')
 
-const { sendBasicMail } = require('./service/email-service');
 
 async function startAndSetupServer(){
     const app = express();
     app.use(bodyParser.urlencoded({extended: true}));
     app.use(bodyParser.json());
     app.use(cors());
-
-
+    
+    
     app.listen(PORT, () => {
-        // sendBasicMail(
-        //     'noreplyy142@gmail.com',
-        //     'sachinsaurabh8210@gmail.com',
-        //     'Testing mail service',
-        //     'This mail is just for testing purpose'
-        // )
         console.log(`Server is running at PORT ${PORT}`);
     })
 }
