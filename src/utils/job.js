@@ -1,5 +1,5 @@
 const cron = require('node-cron')
-const emailService = require('../service/email-service');
+const {NotificationTicketService} = require('../service/index');
 const sender = require('../config/mail-config');
 const {EMAIL_ID} = require('../config/server-config')
 /*
@@ -7,29 +7,29 @@ const {EMAIL_ID} = require('../config/server-config')
  * Every 5 minutes
  * We will check their any pending emails which has expexted to be sent by now and its pending 
 */
-
+const emailService = new NotificationTicketService();
 const setupJobs = () => {
-    cron.schedule('*/2 * * * *', async () => {
-        const response = await emailService.fetchPendingEmails();
+    cron.schedule('*/1 * * * *', async () => {
+        const response = await emailService.fetchAllNotificationTicket({status: 'Pending', notificationTime: new Date()});
         console.log(response)
         response.forEach((res) => {
-            sender.sendMail({
-                from: EMAIL_ID,
-                to: res.recepientEmail,
-                subject: res.subject,
-                text: res.content
-            }, async (err, info) => {
-                if (err) {
-                    console.log(err)
-                } else {
-                    if(res.status != 'Success'){
+            if(res.status != 'Success'){
+                sender.sendMail({
+                    from: EMAIL_ID,
+                    to: res.recepientEmail,
+                    subject: res.subject,
+                    text: res.content
+                }, async (err, info) => {
+                    if (err) {
+                        console.log(err)
+                    } else {
                         await emailService.updateNotificationTicket(res.id, {status: 'Success'});
                         console.log("Mail sended successfully", info)
-                    }else{
-                        console.log("Mail is already sended")
                     }
-                }
-            })
+                })
+            }else{
+                console.log("Mail is already sended")
+            }
         })
     })
 }

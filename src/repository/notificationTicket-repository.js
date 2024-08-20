@@ -1,5 +1,19 @@
 const { NotificationTicket } = require('../models/index')
+const {Op} = require('sequelize')
 class NotificationTicketRepository { 
+    
+    #createFilter(filterData){
+        let filter = {}
+        if(filterData.status){
+            filter.status = filterData.status;
+        }
+        if(filterData.notificationTime){
+            filter.notificationTime = {[Op.lte]: filterData.notificationTime}
+        }
+        console.log(filter)
+        return filter;
+    }
+    
     create = async(data) => {
         try {
             const response = await NotificationTicket.create(data);
@@ -24,13 +38,22 @@ class NotificationTicketRepository {
         }
     }
 
-    get = async(timestamps) => {
-
+    get = async(id) => {
+        try{
+            const response = await NotificationTicket.findByPk(id);
+            return response;
+        }catch(error){
+            console.log("Something went wrong inside repository layer");
+            throw error;
+        }
     }
 
-    getAll = async() => {
+    getAll = async(filter) => {
         try {
-            const response = await NotificationTicket.findAll();
+            const filterData = this.#createFilter(filter);
+            const response = await NotificationTicket.findAll({
+                where: filterData
+            });
             return response
         } catch (error) {
             console.log(error)
