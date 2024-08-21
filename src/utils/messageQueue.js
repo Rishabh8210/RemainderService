@@ -1,6 +1,8 @@
 const amqplib = require('amqplib');
-const {EXCHANGE_NAME, MESSAGE_BROKER_URL} = require('../config/server-config')
+const {EXCHANGE_NAME, MESSAGE_BROKER_URL, EMAIL_ID} = require('../config/server-config')
 const generateTicketPdf = require('./ticketPdfGenerator');
+
+const sender = require('../config/mail-config');
 
 const {NotificationTicketService} = require('../service/index')
 const notificationTicketService = new NotificationTicketService();
@@ -33,7 +35,29 @@ async function subscribeMessage(channel, service, binding_key) {
 
             const ticketResponse = await notificationTicketService.createNotificationTicket(printingData);
             console.log(ticketResponse);
-            channel.ack(msg);
+
+            sender.sendMail({
+                from: EMAIL_ID,
+                to: ticketResponse.recepientEmail,
+                subject: ticketResponse.subject,
+                text: ticketResponse.content,
+                attachments: [
+                    {
+                        filename: 'Ticket.pdf',
+                        path:'src/utils/DigitalTicket/Ticket.pdf',
+                        contentType: 'application/pdf'
+                    }
+                ]
+            }, async (err, info) => {
+                if (err) {
+                    console.log(err)
+                } else {
+                    await notificationTicketService.updateNotificationTicket(ticketResponse.id, {status: 'Success'});
+                    console.log("Mail sended successfully", info)
+                    channel.ack(msg);
+                }
+            })
+
         })
     } catch (error) {
         console.log('Something went wrong inside message queue')
